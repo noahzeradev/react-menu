@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { FaInfoCircle } from 'react-icons/fa';
+import ModalHeader from './ModalHeader';
 
 const MOCK_ADICIONAIS = [
     { id_adicional: 1, nome: "Queijo Extra", valor: 2.5 },
@@ -13,7 +15,7 @@ const MOCK_ADICIONAIS = [
     { id_adicional: 10, nome: "Molho Especial", valor: 3.5 },
 ];
 
-export default function DetalhesItem({ produto, onAdicionar }) {
+export default function DetalhesItem({ produto, onAdicionar, onFechar }) {
     const [adicionais, setAdicionais] = useState([]);
     const [quantidadeProduto, setQuantidadeProduto] = useState(1);
 
@@ -90,85 +92,89 @@ export default function DetalhesItem({ produto, onAdicionar }) {
     };
 
     return (
-        <div style={styles.wrapper}>
-            <h3 style={styles.header}>Detalhes do item:</h3>
-
+        <>
+            <ModalHeader
+                onBack={onFechar}
+                onClose={onFechar}
+                icon={<FaInfoCircle style={{ marginRight: 8, verticalAlign: 'middle' }} />}
+                label="Detalhes do item"
+            />
+            <hr style={styles.divisor} />
             <div style={styles.content}>
                 <p style={styles.produtoNome}>{produto.nome}</p>
                 <p style={styles.produtoDesc}>{produto.descricao}</p>
                 <p>Valor base: R$ {produto.valor.toFixed(2)}</p>
-
-                <h4 style={styles.subheader}>Adicionais:</h4>
-
-                {adicionais.length === 0 ? (
-                    <p>Carregando adicionais...</p>
-                ) : (
-                    <div style={styles.scrollArea}>
-                        <table style={styles.table}>
-                            <thead>
-                                <tr>
-                                    <th style={styles.theadNome}>ADICIONAL</th>
-                                    <th style={styles.theadValor}>VALOR</th>
-                                    <th style={styles.theadQtd}>QTD</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {adicionais.map(({ id_adicional, nome, valor, quantidade }) => (
-                                    <tr key={id_adicional}>
-                                        <td style={styles.nomeCell}>{nome.toUpperCase()}</td>
-                                        <td style={styles.valorCell}>R$ {valor.toFixed(2).replace(".", ",")}</td>
-                                        <td style={styles.qtdCell}>
-                                            <button
-                                                onClick={() => diminuir(id_adicional)}
-                                                disabled={quantidade === 0}
-                                                style={{
-                                                    marginRight: "8px",
-                                                    cursor: quantidade === 0 ? "not-allowed" : "pointer",
-                                                    minWidth: "28px",      // largura mínima
-                                                    height: "28px",        // altura fixa
-                                                    display: "inline-flex", // garantir alinhamento
-                                                    alignItems: "center",
-                                                    justifyContent: "center",
-                                                }}
-                                            >
-                                                -
-                                            </button>
-                                            {quantidade}
-                                            <button
-                                                onClick={() => aumentar(id_adicional)}
-                                                style={{
-                                                    marginLeft: "8px",
-                                                    cursor: "pointer",
-                                                    minWidth: "28px",      // largura mínima
-                                                    height: "28px",        // altura fixa
-                                                    display: "inline-flex", // garantir alinhamento
-                                                    alignItems: "center",
-                                                    justifyContent: "center",
-                                                }}
-                                            >
-                                                +
-                                            </button>
-                                        </td>
+                <hr style={styles.divisor} />
+                {adicionais.length > 0 && (
+                    <>
+                        <h4 style={styles.subheader}>Adicionais:</h4>
+                        <div style={styles.scrollArea}>
+                            <table style={styles.table}>
+                                <thead>
+                                    <tr>
+                                        <th style={styles.theadNome}>ADICIONAL</th>
+                                        <th style={styles.theadValor}>VALOR</th>
+                                        <th style={styles.theadQtd}>QTD</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody>
+                                    {adicionais.map(({ id_adicional, nome, valor, quantidade }) => (
+                                        <tr key={id_adicional}>
+                                            <td style={styles.nomeCell}>{nome.toUpperCase()}</td>
+                                            <td style={styles.valorCell}>R$ {valor.toFixed(2).replace(".", ",")}</td>
+                                            <td style={styles.qtdCell}>
+                                                <button
+                                                    onClick={() => diminuir(id_adicional)}
+                                                    disabled={quantidade === 0}
+                                                    style={{
+                                                        marginRight: "8px",
+                                                        cursor: quantidade === 0 ? "not-allowed" : "pointer",
+                                                        minWidth: "28px",
+                                                        height: "28px",
+                                                        display: "inline-flex",
+                                                        alignItems: "center",
+                                                        justifyContent: "center",
+                                                    }}
+                                                >
+                                                    -
+                                                </button>
+                                                {quantidade}
+                                                <button
+                                                    onClick={() => aumentar(id_adicional)}
+                                                    style={{
+                                                        marginLeft: "8px",
+                                                        cursor: "pointer",
+                                                        minWidth: "28px",
+                                                        height: "28px",
+                                                        display: "inline-flex",
+                                                        alignItems: "center",
+                                                        justifyContent: "center",
+                                                    }}
+                                                >
+                                                    +
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
                 )}
             </div>
-
-            <div style={styles.footer}>
-                <div style={styles.quantidadeFooter}>
-                    <button onClick={diminuirProduto} disabled={quantidadeProduto <= 1}>-</button>
-                    <span style={{ margin: "0 10px" }}>{quantidadeProduto}</span>
-                    <button onClick={aumentarProduto}>+</button>
+            <div style={styles.footerResumo}>
+                <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
+                    <div style={styles.quantidadeFooter}>
+                        <button onClick={diminuirProduto} disabled={quantidadeProduto <= 1}>-</button>
+                        <span style={{ margin: "0 10px" }}>{quantidadeProduto}</span>
+                        <button onClick={aumentarProduto}>+</button>
+                    </div>
+                    <button onClick={handleAdicionar} style={styles.btnFinalizar}>
+                        Adicionar R$ {totalGeral.toFixed(2).replace(".", ",")}
+                    </button>
                 </div>
-
-                <button onClick={handleAdicionar} style={styles.addButton}>
-                    Adicionar R$ {totalGeral.toFixed(2).replace(".", ",")}
-                </button>
             </div>
-        </div>
+        </>
     );
 }
 
@@ -176,9 +182,9 @@ const styles = {
     wrapper: {
         position: "relative",
         width: "100%",
-        maxWidth: "960px",
+        maxWidth: "420px",
         maxHeight: "600px",
-        padding: "16px",
+        padding: "16px 20px",
         backgroundColor: "#fff",
         borderRadius: "8px",
         boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
@@ -186,21 +192,29 @@ const styles = {
         flexDirection: "column",
         overflow: "hidden",
         fontSize: "14px",
+        overflowX: "auto",
+        margin: "0 auto",
+        '@media (max-width: 480px)': {
+            padding: '8px 4px',
+            maxWidth: '98vw',
+        },
     },
-    header: {
-        position: "sticky",
-        top: 0,
-        backgroundColor: "#fff",
-        paddingBottom: "6px",
-        borderBottom: "1px solid #ddd",
+    // header removido, usar styles.titulo
+    titulo: {
         margin: 0,
-        fontSize: "16px",
-        zIndex: 10,
+        marginBottom: "16px",
+        fontSize: "24px",
+        fontWeight: "700",
+        textAlign: "center",
+        color: "#222",
     },
     content: {
         overflowY: "auto",
         paddingRight: "6px",
         flex: 1,
+        width: "100%",
+        maxWidth: "600px",
+        boxSizing: "border-box",
     },
     produtoNome: {
         fontWeight: "bold",
@@ -222,10 +236,20 @@ const styles = {
         overflowY: "auto",
         border: "1px solid #eee",
         borderRadius: "4px",
+        width: "100%",
+        maxWidth: "600px",
+        boxSizing: "border-box",
     },
     table: {
         width: "100%",
+        minWidth: "220px",
+        maxWidth: "100%",
         borderCollapse: "collapse",
+        boxSizing: "border-box",
+        // Responsividade para telas pequenas
+        '@media (max-width: 480px)': {
+            minWidth: '220px',
+        },
     },
     theadNome: {
         textAlign: "left",
@@ -286,22 +310,95 @@ const styles = {
         alignItems: "center",
         zIndex: 10,
         fontSize: "15px",
+        width: "100%",
+        maxWidth: "100%",
+        boxSizing: "border-box",
     },
     quantidadeFooter: {
         display: "flex",
         alignItems: "center",
         gap: "6px",
     },
-    addButton: {
-        cursor: "pointer",
-        fontWeight: "600",
-        fontSize: "15px",
-        padding: "10px 18px",
-        borderRadius: "4px",
-        backgroundColor: "#007bff",
-        color: "white",
+    btnFinalizar: {
+        backgroundColor: "#28a745",
         border: "none",
-        userSelect: "none",
+        color: "#fff",
+        padding: "12px 20px",
+        borderRadius: "8px",
+        cursor: "pointer",
+        fontWeight: "700",
+        fontSize: "18px",
+        width: "100%",
+        transition: "background-color 0.3s",
+        marginTop: 12,
+        marginBottom: 0,
+        display: 'block',
+    },
+    innerContent: {
+        width: '100%',
+        maxWidth: '600px',
+        margin: '0 auto',
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        padding: '20px',
+    },
+    divisor: {
+        border: 0,
+        borderTop: '2px solid #eee',
+        margin: '18px 0 10px 0',
+        width: '100%',
+    },
+    headerRow: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        width: '100%',
+        padding: '0 12px',
+        minHeight: '56px',
+        boxSizing: 'border-box',
+        gap: '8px',
+    },
+    btnVoltar: {
+        background: 'none',
+        border: 'none',
+        fontSize: 24,
+        color: '#007bff',
+        cursor: 'pointer',
+        zIndex: 10,
+        padding: 0,
+        width: 36,
+        height: 36,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    btnFechar: {
+        background: "none",
+        border: "none",
+        fontSize: "28px",
+        cursor: "pointer",
+        color: "#888",
+        transition: "color 0.2s",
+        zIndex: 10,
+        padding: 0,
+        width: 36,
+        height: 36,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    footerResumo: {
+        borderTop: "1px solid #eee",
+        padding: "12px 24px 16px 24px",
+        background: "#fff",
+        position: "sticky",
+        bottom: 0,
+        zIndex: 2,
+        display: "flex",
+        flexDirection: "column",
+        gap: "12px",
     },
 };
 

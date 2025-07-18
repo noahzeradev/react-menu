@@ -1,22 +1,22 @@
 function ProdutoItem({ produto, onAdicionarClick }) {
     return (
         <tr style={styles.row}>
-            <td style={styles.cell}>
-                <div>
-                    <strong>{produto.nome}</strong>
-                    <br />
-                    <small>{produto.descricao}</small>
-                    <br />
-                    <span>R$ {produto.valor.toFixed(2)}</span>
+            <td colSpan={2} style={{ ...styles.cell, padding: 0 }}>
+                <div style={styles.produtoFlexRow}>
+                    <div style={styles.produtoInfo}>
+                        <strong>{produto.nome}</strong>
+                        <br />
+                        <small>{produto.descricao}</small>
+                        <br />
+                        <span style={styles.valorVerde}>R$ {produto.valor.toFixed(2)}</span>
+                    </div>
+                    <button
+                        style={styles.button}
+                        onClick={() => onAdicionarClick(produto)}
+                    >
+                        +
+                    </button>
                 </div>
-            </td>
-            <td style={styles.cell}>
-                <button
-                    style={styles.button}
-                    onClick={() => onAdicionarClick(produto)}
-                >
-                    +
-                </button>
             </td>
         </tr>
     );
@@ -38,6 +38,28 @@ const styles = {
         padding: "6px 12px",
         cursor: "pointer",
         fontSize: "16px",
+    },
+    valorVerde: {
+        color: "#28a745",
+        fontWeight: 600,
+    },
+    produtoFlexRow: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        width: '100%',
+        padding: '10px',
+        gap: '12px',
+        boxSizing: 'border-box',
+    },
+    produtoInfo: {
+        flex: 1,
+        minWidth: 0,
+        overflow: 'hidden',
+        whiteSpace: 'nowrap',
+        textOverflow: 'ellipsis',
+        display: 'block',
+        maxWidth: 'calc(100vw - 110px)', // Garante espaço para o botão em telas pequenas
     },
 };
 

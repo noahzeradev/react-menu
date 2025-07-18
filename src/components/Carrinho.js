@@ -1,10 +1,13 @@
 import React from 'react';
 import { FaShoppingCart } from 'react-icons/fa';
 import { IMaskInput } from 'react-imask';
-import ConfirmacaoModal from './ConfirmacaoModal';
+import ConfirmacaoEnderecoModal from './ConfirmacaoEndrecoModal';
+import ConfirmacaoPagamentoModal from './ConfirmacaoPagamentoModal';
+import ModalHeader from './ModalHeader';
 
 function Carrinho({
     produtos,
+    setProdutosNoCarrinho,
     subtotal,
     total,
     cpfNota, // será substituído por nome
@@ -14,25 +17,25 @@ function Carrinho({
     onFechar,
     onFinalizar,
 }) {
-    const [nome, setNome] = React.useState("");
-    const [telefone, setTelefone] = React.useState("");
+    const [nome, setNome] = React.useState(() => localStorage.getItem('carrinho_nome') || "");
+    const [telefone, setTelefone] = React.useState(() => localStorage.getItem('carrinho_telefone') || "");
     const [mostrarConfirmacao, setMostrarConfirmacao] = React.useState(false);
-
-    // Função para finalizar pedido incluindo nome e telefone
-    const handleFinalizar = () => {
+    const [mostrarPagamento, setMostrarPagamento] = React.useState(false);
+    const [dadosEntrega, setDadosEntrega] = React.useState(null);
+    // Função para finalizar pedido incluindo nome, telefone e pagamento
+    const handleFinalizar = (pagamentoInfo) => {
         if (!nome.trim() || telefone.replace(/\D/g, "").length < 11) {
             alert("Por favor, preencha nome e telefone corretamente.");
             return;
         }
-        onFinalizar({ nome, telefone });
+        // Chama o onFinalizar com todos os dados
+        onFinalizar({ nome, telefone, ...dadosEntrega, ...pagamentoInfo });
     };
-
     const handleOverlayClick = (e) => {
         if (e.target === e.currentTarget) {
             onFechar();
         }
     };
-
     const handleContinuar = () => {
         if (!nome.trim() || telefone.replace(/\D/g, "").length < 11) {
             alert("Por favor, preencha nome e telefone corretamente.");
@@ -40,17 +43,53 @@ function Carrinho({
         }
         setMostrarConfirmacao(true);
     };
-
+    // Quando confirmar entrega/retirada, abre o modal de pagamento
+    const handleConfirmacaoEntrega = (dados) => {
+        setDadosEntrega(dados || {});
+        setMostrarConfirmacao(false);
+        setMostrarPagamento(true);
+    };
+    // Quando confirmar pagamento, finaliza o pedido
+    const handleConfirmacaoPagamento = (pagamentoInfo) => {
+        setMostrarPagamento(false);
+        // Repassa aba e outros dados de entrega junto com pagamento
+        handleFinalizar({ ...dadosEntrega, ...pagamentoInfo });
+    };
+    // Função para remover item do carrinho
+    const handleRemoverItem = (index) => {
+        const novosProdutos = produtos.filter((_, i) => i !== index);
+        // Atualiza o estado do carrinho no componente pai, se existir
+        if (typeof window !== 'undefined' && window.dispatchEvent) {
+            // Gatilho para atualização externa, se necessário
+            window.dispatchEvent(new Event('carrinhoAtualizado'));
+        }
+        // Se houver setProdutosNoCarrinho no pai, idealmente passar por props
+        if (typeof setProdutosNoCarrinho === 'function') {
+            setProdutosNoCarrinho(novosProdutos);
+        }
+        // Caso contrário, pode ser necessário atualizar via callback do pai
+        // Aqui, apenas alerta se não for possível
+    };
+    // Atualizar localStorage ao digitar nome
+    const handleNomeChange = (e) => {
+        setNome(e.target.value);
+        localStorage.setItem('carrinho_nome', e.target.value);
+    };
+    // Atualizar localStorage ao digitar telefone
+    const handleTelefoneChange = (value) => {
+        setTelefone(value);
+        localStorage.setItem('carrinho_telefone', value);
+    };
     return (
         <div style={styles.overlay} onClick={handleOverlayClick}>
             <div style={styles.modal}>
-                <button style={{ position: 'absolute', top: 10, left: 10, background: 'none', border: 'none', fontSize: 24, color: '#007bff', cursor: 'pointer', zIndex: 10, padding: 0, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onFechar} aria-label="Voltar">
-                    &#8592;
-                </button>
-                <h2 style={styles.titulo}><FaShoppingCart style={{ marginRight: 8, verticalAlign: 'middle' }} />Seu carrinho</h2>
-                <button style={styles.btnFechar} onClick={onFechar}>
-                    &times;
-                </button>
+                <ModalHeader
+                    onBack={onFechar}
+                    onClose={onFechar}
+                    icon={<FaShoppingCart style={{ marginRight: 8, verticalAlign: 'middle' }} />}
+                    label="Seu carrinho"
+                />
+                <hr style={styles.divisor} />
                 <div style={styles.modalContent}>
                     {produtos.length === 0 ? (
                         <p style={styles.carrinhoVazio}>Seu carrinho está vazio.</p>
@@ -64,9 +103,16 @@ function Carrinho({
                                         <span style={styles.valorUnitario}>
                                             R$ {(item.produto.valor || 0).toFixed(2)}
                                         </span>
+                                        <button
+                                            style={styles.btnRemoverItem}
+                                            onClick={() => handleRemoverItem(index)}
+                                            aria-label="Remover item"
+                                        >
+                                            &#10005;
+                                        </button>
                                     </div>
                                     {item.adicionais && item.adicionais.length > 0 && (
-                                        <div style={styles.adicionaisContainer}>
+                                        <div style={styles.adicionaisContainerFullWidth}>
                                             {item.adicionais
                                                 .filter((ad) => ad.quantidade > 0)
                                                 .map((adicional, idx) => (
@@ -74,7 +120,7 @@ function Carrinho({
                                                         <span>
                                                             + {adicional.quantidade}x {adicional.nome}
                                                         </span>
-                                                        <span>
+                                                        <span style={styles.adicionalValor}>
                                                             R$ {(adicional.valor * adicional.quantidade).toFixed(2)}
                                                         </span>
                                                     </div>
@@ -96,7 +142,7 @@ function Carrinho({
                             style={styles.input}
                             type="text"
                             value={nome}
-                            onChange={e => setNome(e.target.value)}
+                            onChange={handleNomeChange}
                             placeholder="Digite seu nome"
                         />
                     </div>
@@ -106,29 +152,24 @@ function Carrinho({
                         <IMaskInput
                             mask="(00) 00000-0000"
                             value={telefone}
-                            onAccept={(value) => setTelefone(value)}
+                            onAccept={handleTelefoneChange}
                             style={styles.input}
                             placeholder="(99) 99999-9999"
                         />
                     </div>
-
+                </div>
+                {/* Resumo e botão Continuar juntos no footer */}
+                <div style={styles.modalFooterResumo}>
                     <div style={styles.resumo}>
                         <div style={styles.linhaResumo}>
                             <span>Subtotal:</span>
                             <span>R$ {subtotal.toFixed(2)}</span>
-                        </div>
-                        <div style={styles.linhaResumo}>
-                            <span>Taxa de entrega:</span>
-                            <span>R$ 5,00</span>
                         </div>
                         <div style={{ ...styles.linhaResumo, ...styles.total }}>
                             <span>Total:</span>
                             <span>R$ {total.toFixed(2)}</span>
                         </div>
                     </div>
-                </div>
-                <div style={styles.modalFooter}>
-                    {/* Botão Continuar */}
                     <button style={{ ...styles.btnFinalizar, marginTop: 8 }} onClick={handleContinuar}>
                         Continuar
                     </button>
@@ -136,12 +177,24 @@ function Carrinho({
             </div>
             {/* Modal de confirmação sobreposto */}
             {mostrarConfirmacao && (
-                <ConfirmacaoModal
+                <ConfirmacaoEnderecoModal
                     nome={nome}
                     telefone={telefone}
                     total={total} // Garantir que o total é passado
-                    onConfirmar={handleFinalizar}
+                    onConfirmar={handleConfirmacaoEntrega}
                     onFechar={() => setMostrarConfirmacao(false)}
+                />
+            )}
+            {/* Modal de pagamento sobreposto */}
+            {mostrarPagamento && (
+                <ConfirmacaoPagamentoModal
+                    total={
+                        dadosEntrega && dadosEntrega.aba === 'entrega'
+                            ? total + 5
+                            : total
+                    }
+                    onConfirmar={handleConfirmacaoPagamento}
+                    onFechar={() => setMostrarPagamento(false)}
                 />
             )}
         </div>
@@ -190,6 +243,17 @@ const styles = {
         bottom: 0,
         zIndex: 2,
     },
+    modalFooterResumo: {
+        borderTop: "1px solid #eee",
+        padding: "12px 24px 16px 24px",
+        background: "#fff",
+        position: "sticky",
+        bottom: 0,
+        zIndex: 2,
+        display: "flex",
+        flexDirection: "column",
+        gap: "12px",
+    },
     totalResumo: {
         fontSize: "15px",
         color: "#333",
@@ -205,15 +269,19 @@ const styles = {
         color: "#222",
     },
     btnFechar: {
-        position: "absolute",
-        top: "12px",
-        right: "16px",
-        border: "none",
         background: "none",
+        border: "none",
         fontSize: "28px",
         cursor: "pointer",
         color: "#888",
         transition: "color 0.2s",
+        zIndex: 10,
+        padding: 0,
+        width: 36,
+        height: 36,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     carrinhoVazio: {
         fontStyle: "italic",
@@ -228,39 +296,63 @@ const styles = {
         borderBottom: "1px solid #ddd",
         paddingBottom: "12px",
         marginBottom: "12px",
+        position: 'relative',
+        minHeight: '36px',
+        display: 'flex',
+        flexDirection: 'column', // <-- empilha linha principal e adicionais
+        alignItems: 'stretch',
     },
     itemTopo: {
         display: "flex",
+        flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
+        gap: "6px",
+        width: "100%",
     },
     quantidade: {
         fontWeight: "700",
         color: "#444",
         marginRight: "8px",
         minWidth: "24px",
+        fontSize: "15px",
     },
     nomeProduto: {
-        flex: 1,
+        flex: 2,
         fontWeight: "600",
         color: "#222",
+        fontSize: "15px",
+        minWidth: 0,
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+        textAlign: 'left',
     },
     valorUnitario: {
         fontWeight: "600",
-        color: "#333",
-        minWidth: "70px",
-        textAlign: "right",
+        color: "#222",
+        fontSize: "15px",
+        marginLeft: "8px",
+        textAlign: 'left',
     },
     adicionaisContainer: {
         marginTop: "6px",
         paddingLeft: "28px",
-        fontSize: "14px",
+        fontSize: "13px",
         color: "#555",
+        wordBreak: 'break-word',
     },
     adicionalItem: {
         display: "flex",
-        justifyContent: "space-between",
+        justifyContent: "flex-start",
         marginTop: "4px",
+        fontSize: "13px",
+        gap: "12px",
+        color: undefined, // reset cor padrão
+    },
+    adicionalValor: {
+        color: "#222",
+        fontWeight: 600,
     },
     btnAdicionarMais: {
         backgroundColor: "#007bff",
@@ -278,6 +370,9 @@ const styles = {
     inputGroup: {
         marginBottom: "12px",
         textAlign: "left", // Alinhar à esquerda
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-start",
     },
     label: {
         display: "block",
@@ -288,6 +383,7 @@ const styles = {
     },
     input: {
         width: "100%",
+        maxWidth: "340px",
         padding: "8px",
         borderRadius: "6px",
         border: "1px solid #ccc",
@@ -317,7 +413,7 @@ const styles = {
     total: {
         fontWeight: "700",
         fontSize: "18px",
-        color: "#007bff",
+        color: "#28a745",
     },
     btnFinalizar: {
         backgroundColor: "#28a745",
@@ -331,6 +427,91 @@ const styles = {
         width: "100%",
         transition: "background-color 0.3s",
     },
+    btnRemoverItem: {
+        background: 'none',
+        border: 'none',
+        color: '#d32f2f',
+        cursor: 'pointer',
+        fontSize: '18px',
+        padding: 0,
+        outline: 'none',
+        marginLeft: '12px',
+        alignSelf: 'center',
+        flexShrink: 0,
+    },
+    // Novo estilo para adicionais ocuparem toda a largura
+    adicionaisContainerFullWidth: {
+        width: '100%',
+        paddingLeft: '28px',
+        fontSize: '13px',
+        color: '#555',
+        wordBreak: 'break-word',
+        marginTop: '2px',
+    },
+    headerRow: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        width: '100%',
+        padding: '0 12px',
+        minHeight: '56px',
+        boxSizing: 'border-box',
+        gap: '8px',
+    },
+    btnVoltar: {
+        background: 'none',
+        border: 'none',
+        fontSize: 24,
+        color: '#007bff',
+        cursor: 'pointer',
+        zIndex: 10,
+        padding: 0,
+        width: 36,
+        height: 36,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    divisor: {
+        border: 0,
+        borderTop: '2px solid #eee',
+        margin: '10px 0 18px 0',
+        width: '100%',
+    },
 };
+
+// Adicionar responsividade globalmente
+const mediaQuery = `@media (max-width: 480px)`;
+const responsiveStyles = {
+    item: {
+        minHeight: '32px',
+        paddingBottom: '8px',
+        marginBottom: '8px',
+    },
+    nomeProduto: {
+        fontSize: '13px',
+    },
+    valorUnitario: {
+        fontSize: '13px',
+        minWidth: '56px',
+    },
+    quantidade: {
+        fontSize: '13px',
+    },
+    adicionaisContainer: {
+        fontSize: '12px',
+    },
+    adicionalItem: {
+        fontSize: '12px',
+    },
+    btnRemoverItem: {
+        fontSize: '16px',
+        marginLeft: '6px',
+    },
+};
+// Mesclar responsividade ao exportar styles
+Object.keys(responsiveStyles).forEach(key => {
+    styles[key] = { ...styles[key], [mediaQuery]: responsiveStyles[key] };
+});
 
 export default Carrinho;

@@ -75,23 +75,23 @@ function ListaProdutos({ onAdicionarClick }) {
                 return (
                     <div key={catalogo.id_catalogo} style={{ marginBottom: "2rem" }}>
                         <h2 style={styles.catalogoTitulo}>{catalogo.nome}</h2>
-                        <table style={styles.table}>
-                            <thead>
-                                <tr style={styles.headerRow}>
-                                    <th style={styles.cell}>Produto</th>
-                                    <th style={styles.cell}>Ação</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {produtosDoCatalogo.map((produto) => (
-                                    <ProdutoItem
-                                        key={produto.id_produto || produto.id}
-                                        produto={produto}
-                                        onAdicionarClick={onAdicionarClick}
-                                    />
-                                ))}
-                            </tbody>
-                        </table>
+                        <div style={styles.responsiveTable}>
+                            <div style={styles.headerFlexRow}>
+                                <span style={styles.headerProduto}>Produto</span>
+                                <span style={styles.headerAcao}>Ação</span>
+                            </div>
+                            <table style={styles.table}>
+                                <tbody>
+                                    {produtosDoCatalogo.map((produto) => (
+                                        <ProdutoItem
+                                            key={produto.id_produto || produto.id}
+                                            produto={produto}
+                                            onAdicionarClick={onAdicionarClick}
+                                        />
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 );
             })}
@@ -121,6 +121,30 @@ const styles = {
         marginBottom: "0.5rem",
         borderBottom: "2px solid #ddd",
         paddingBottom: "4px",
+    },
+    responsiveTable: {
+        width: '100%',
+        minWidth: 0,
+        overflowX: 'auto',
+        boxSizing: 'border-box',
+    },
+    headerFlexRow: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '0 10px 4px 10px',
+        fontWeight: 600,
+        fontSize: '15px',
+        color: '#444',
+    },
+    headerProduto: {
+        flex: 1,
+        minWidth: 0,
+        textAlign: 'left',
+    },
+    headerAcao: {
+        minWidth: '60px',
+        textAlign: 'right',
     },
 };
 
